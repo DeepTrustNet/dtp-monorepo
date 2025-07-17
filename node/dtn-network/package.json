@@ -1,0 +1,42 @@
+{
+  "name": "dtn-network",
+  "module": "dist/index.cjs",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "dtn-node": "./dist/index.cjs"
+  },
+  "main": "dist/index.cjs",
+  "files": [
+    "dist"
+  ],
+  "devDependencies": {
+    "@types/bun": "latest",
+    "tsup": "^8.5.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "bun run build --watch",
+    "start": "node dist/index.cjs",
+    "start:once": "node dist/index.cjs run-once",
+    "start:loop": "node dist/index.cjs loop",
+    "configure": "node dist/index.cjs configure-node",
+    "prebuild": "rm -rf dist",
+    "postbuild": "chmod +x dist/index.cjs",
+    "test": "bun test",
+    "docker:build": "./scripts/build.sh",
+    "docker:test": "./scripts/test.sh",
+    "docker:all": "bun run docker:build && bun run docker:test",
+    "docker:clean": "docker rm -f dtn-node-test 2>/dev/null || true && docker rmi dtn-network-node:latest 2>/dev/null || true && rm -f test-config.yaml 2>/dev/null || true"
+  },
+  "dependencies": {
+    "axios": "^1.10.0",
+    "commander": "^12.0.0",
+    "ethers": "^6.14.4",
+    "fs": "^0.0.1-security",
+    "yaml": "^2.8.0"
+  }
+}

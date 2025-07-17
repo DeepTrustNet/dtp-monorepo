@@ -1,0 +1,32 @@
+---
+description: 
+globs: 
+---
+# NFT AI Implementation Guide
+
+## Overview
+This guide provides step-by-step requirements for implementing the NftAi project, which creates AI-generated NFTs using a two-step process: image generation and metadata creation. Note we need to maintain flexibility of the underlying contracts as their real goal is to build a platform.
+
+## Implementation Steps
+
+1- Implement V0.1 contracts
+Some basic logic for all sub-systems. Everything implemented under router
+
+2- Add tests
+Have some tests around each sub-system
+Have an end-to-end integration test around nft-ai
+
+3- Deploy and configure scripts
+Deploy and configure on testnet and mainnet
+
+4- Dummy node
+A dummy node implementation (e.g. Hello-world model) that is not really AI but implements all the features for testing
+
+5- End-to-end test
+Deploy one mainnet
+Launch dummy node
+Create AI-NFT using etherscan calls or a script
+
+6- Documentation
+Developer documentation
+Node builder documentation

@@ -1,0 +1,58 @@
+# Build stage
+FROM oven/bun:1-alpine AS builder
+
+# Install necessary packages for building
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    git
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY bun.lock ./
+COPY tsup.config.ts ./
+
+# Install all dependencies (including dev dependencies for building)
+RUN bun install
+
+# Copy source code
+COPY src/ ./src/
+
+# Build the application
+RUN bun run build
+
+# Copy configuration file
+COPY src/nodeConfig.yaml ./nodeConfig.yaml
+
+# Production stage
+FROM oven/bun:1-alpine AS production
+
+# Install runtime dependencies only
+RUN apk add --no-cache dumb-init
+
+# Create a non-root user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nodejs -u 1001
+
+# Set working directory
+WORKDIR /app
+
+# Copy built application from builder stage
+COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nodejs:nodejs /app/nodeConfig.yaml ./nodeConfig.yaml
+
+# Switch to non-root user
+USER nodejs
+
+# Set environment variables
+ENV NODE_ENV=production
+
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
+
+# Default command
+CMD ["bun", "dist/index.cjs", "--help"] 
