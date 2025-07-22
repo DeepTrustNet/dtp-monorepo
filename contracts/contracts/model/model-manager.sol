@@ -14,6 +14,7 @@ import "../core/inamespace-manager.sol";
  */
 contract ModelManagerUpgradeable is IModelManager, AccessControlUpgradeable, IDtnAiModels {
     bytes32 public constant NAMESPACE_ADMIN_ROLE = keccak256("NAMESPACE_ADMIN_ROLE");
+    error InvalidModelApi(string modelApi);
 
     /// @custom:storage-location erc7201:dtn.storage.modelmanager.001
     struct ModelManagerStorageV001 {
@@ -50,20 +51,21 @@ contract ModelManagerUpgradeable is IModelManager, AccessControlUpgradeable, IDt
         }
     }
 
-    function _setDependencies(address _namespaceManager) internal virtual {
+    function getNamespaceManager() external view returns (address) {
+        ModelManagerStorageV001 storage $ = getModelStorageV001();
+        return $.namespaceManager;
+    }
+
+    function getRouter() external view returns (address) {
+        ModelManagerStorageV001 storage $ = getModelStorageV001();
+        return $.router;
+    }
+
+    function setDependencies(address _router, address _namespaceManager) external onlyRole(DEFAULT_ADMIN_ROLE) virtual {
         ModelManagerStorageV001 storage $ = getModelStorageV001();
         $.namespaceManager = _namespaceManager;
-    }
-
-    /**
-     * @notice Set the router address (only callable by admin)
-     * @param _router The router contract address
-     */
-    function setRouter(address _router) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        ModelManagerStorageV001 storage $ = getModelStorageV001();
         $.router = _router;
     }
-
 
     /**
      * @notice Register a model API for a namespace
@@ -122,6 +124,11 @@ contract ModelManagerUpgradeable is IModelManager, AccessControlUpgradeable, IDt
         string memory fullModelName = string.concat(namespace, ".", modelName);
         if (bytes(modelName).length == 0) {
             revert InvalidModelName(modelName);
+        }
+
+        bytes32 modelApiId = keccak256(abi.encodePacked(modelApi));
+        if ($.apisById[modelApiId].apiId == bytes32(0)) {
+            revert InvalidModelApi(modelApi);
         }
 
         bytes32 _modelId = keccak256(abi.encodePacked(fullModelName));

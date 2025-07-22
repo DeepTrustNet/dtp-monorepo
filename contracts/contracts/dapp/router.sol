@@ -70,6 +70,8 @@ contract RouterUpgradeable is
     );
     event RequestCompleted(bytes32 indexed requestId, ResponseStatus status);
     event ResponseReceived(bytes32 indexed requestId, bytes32 indexed nodeId, ResponseStatus status);
+    event SuccessCallbackFailed(bytes32 indexed requestId, bytes data);
+    event FailureCallbackFailed(bytes32 indexed requestId, bytes data);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -160,7 +162,7 @@ contract RouterUpgradeable is
         return $.requests[requestId];
     }
 
-    function setDependencies(address nodeManager, address sessionManager, address modelManager, address namespaceManager) external onlyOwner {
+    function setDependencies(address nodeManager, address sessionManager, address modelManager) external onlyOwner {
         RouterStorageV001 storage $ = getRouterStorageV001();
         $.nodeManager = nodeManager;
         $.sessionManager = sessionManager;
@@ -283,27 +285,31 @@ contract RouterUpgradeable is
         requestData.completed = true;
         
         // Extract final response
-        IDtnAi.Response memory finalResponse = strategy.extractSingleResponse(
-            requestId,
-            $.responses[requestId]
-        );
+        if (status == ResponseStatus.SUCCESS) {
+            IDtnAi.Response memory finalResponse = strategy.extractSingleResponse(
+                requestId,
+                $.responses[requestId]
+            );
+            requestData.finalResponse = finalResponse;
+        } else {
+            // For failure, just take the first response (should be only one)
+            require($.responses[requestId].length > 0, "No responses found");
+            requestData.finalResponse = $.responses[requestId][0];
+        }
 
-        // Store the final response and mark as completed
-        requestData.finalResponse = finalResponse;
-
-        console.log("Callback gas", requestData.callbackGas);
-        console.log("Callback", requestData.callback.target);
         // Call callback
         if (status == ResponseStatus.SUCCESS) { // Success
-            (bool success, ) = requestData.callback.target.call{gas: requestData.callbackGas}(
-                abi.encodeWithSelector(requestData.callback.suscess, requestId)
+            (bool success, bytes memory data) = requestData.callback.target.call{gas: requestData.callbackGas}(
+                abi.encodeWithSelector(requestData.callback.success, requestId)
             );
-            require(success, "Success callback failed");
+            console.log("Success callback");
+            console.logBytes(data);
+            if (!success) emit SuccessCallbackFailed(requestId, data);
         } else { // Failure
-            (bool success, ) = requestData.callback.target.call{gas: requestData.callbackGas}(
+            (bool success, bytes memory data) = requestData.callback.target.call{gas: requestData.callbackGas}(
                 abi.encodeWithSelector(requestData.callback.failure, requestId)
             );
-            require(success, "Failure callback failed");
+            if (!success) emit FailureCallbackFailed(requestId, data);
         }
 
         emit RequestCompleted(requestId, status);

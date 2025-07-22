@@ -9,7 +9,6 @@ const TOKEN = "0x0000000000000000000000000000000000000000";
 const LockModule = buildModule("DeployRouter", (m) => {
   const owner = m.getParameter("owner", m.getAccount(0));
   const token = m.getParameter("token", TOKEN);
-  console.log("owner", owner.defaultValue);
 
   // Calculate role hashes
   const NAMESPACE_ADMIN_ROLE = keccak256(toUtf8Bytes("NAMESPACE_ADMIN_ROLE"));
@@ -46,8 +45,8 @@ const LockModule = buildModule("DeployRouter", (m) => {
   const router = m.contractAt("RouterUpgradeable", routerProxy, { id: "router" });
 
   // Set dependencies for all contracts (after initialization)
-  m.call(router, "setDependencies", [nodeManager, sessionManager, modelManager, namespaceManager], { id: "routerSetDeps" });
-  m.call(modelManager, "setRouter", [router], { id: "modelManagerSetRouter" });
+  m.call(router, "setDependencies", [nodeManager, sessionManager, modelManager], { id: "routerSetDeps" });
+  m.call(modelManager, "setDependencies", [router, namespaceManager], { id: "modelManagerSetRouter" });
 
   // sessionManager.addDtnContracts([router.target]);
   m.call(sessionManager, "addDtnContracts", [[router]], { id: "sessionManagerAddDtnContracts" });
