@@ -20,9 +20,7 @@ export interface ModelConfig {
 }
 
 export interface IpfsConfig {
-    apiKey: string;
-    secretKey: string;
-    gateway?: string;
+    pinataJwt?: string;
 }
 
 export interface NodeConfig {
@@ -40,6 +38,7 @@ export interface NodeConfig {
         modelManagerAddress: string;
         namespaceManagerAddress: string;
         routerAddress: string;
+        sessionManagerAddress: string;
     };
     ipfs: IpfsConfig;
     modelApis: ModelApiConfig [];
@@ -158,7 +157,7 @@ export interface RouterRequest {
     request: {
         call: BytesLike;
         extraParams: BytesLike;
-        calltype: number;
+        calltype: bigint;
         feePerByteReq: bigint;
         feePerByteRes: bigint;
         totalFeePerRes: bigint;
